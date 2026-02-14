@@ -1,5 +1,3 @@
-import type { NextAuthConfig } from 'next-auth';
-
 export const authConfig = {
     pages: {
         signIn: '/login',
@@ -7,25 +5,27 @@ export const authConfig = {
     },
     providers: [],
     callbacks: {
-        authorized({ auth, request: { nextUrl } }) {
+        authorized({ auth, request }: any) {
             const isLoggedIn = !!auth?.user;
-            const isAuthPage = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/register');
+            const isOnDashboard = !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/register');
 
-            // Allow auth pages
-            if (isAuthPage) {
-                if (isLoggedIn) return Response.redirect(new URL('/', nextUrl));
-                return true;
-            }
+            // Check if accessing protected routes
+            if (isOnDashboard) {
+                // Exclude API and static files
+                if (request.nextUrl.pathname.startsWith('/api') ||
+                    request.nextUrl.pathname.startsWith('/_next') ||
+                    request.nextUrl.pathname.includes('.')) {
+                    return true;
+                }
 
-            // Allow API routes and static assets (handled by matcher too)
-            if (nextUrl.pathname.startsWith('/api')) return true;
-
-            // Protect dashboard (root and subpaths)
-            if (!isLoggedIn) {
+                if (isLoggedIn) return true;
                 return false; // Redirect to login
+            } else if (isLoggedIn) {
+                // If on login/register but logged in, redirect to home
+                return Response.redirect(new URL('/', request.nextUrl));
             }
 
             return true;
         },
     },
-} satisfies NextAuthConfig;
+};
