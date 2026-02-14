@@ -18,11 +18,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   let session: any = null;
+  /* 
   try {
     session = await auth();
   } catch (e) {
     console.error("RootLayout auth error:", e);
   }
+  */
 
   return (
     <html lang="es">
@@ -62,7 +64,7 @@ export default async function RootLayout({
                   "use server"
                   await signOut({ redirectTo: "/login" });
                 }}>
-                  <button type="submit" style={{
+                  <button type="submit" className="logout-btn" style={{
                     background: 'transparent',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
@@ -71,12 +73,7 @@ export default async function RootLayout({
                     cursor: 'pointer',
                     fontSize: '0.875rem',
                     transition: 'all 0.2s'
-                  }}
-                    // @ts-ignore
-                    onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
-                    // @ts-ignore
-                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                  >
+                  }}>
                     Log out
                   </button>
                 </form>
