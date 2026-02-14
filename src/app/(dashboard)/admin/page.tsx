@@ -2,6 +2,10 @@ import prisma from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { updateUserRole, assignServer, removeServerAssignment } from "@/lib/admin-actions";
 
+import UserRoleSelect from "@/components/admin/UserRoleSelect";
+
+export const dynamic = 'force-dynamic';
+
 export default async function AdminPage() {
     const users = await prisma.user.findMany({
         include: { serverAssignments: true },
@@ -18,27 +22,11 @@ export default async function AdminPage() {
                             <p style={{ color: '#888', fontSize: '0.9rem' }}>{user.email}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <form action={async (formData) => {
-                                'use server'
-                                await updateUserRole(user.id, formData.get('role') as Role);
-                            }}>
-                                <select
-                                    name="role"
-                                    defaultValue={user.role}
-                                    style={{
-                                        padding: '0.5rem',
-                                        background: 'rgba(0,0,0,0.5)',
-                                        color: '#fff',
-                                        border: '1px solid var(--card-border)',
-                                        borderRadius: '6px'
-                                    }}
-                                    onChange={(e) => e.target.form?.requestSubmit()}
-                                >
-                                    {Object.values(Role).map(role => (
-                                        <option key={role} value={role}>{role}</option>
-                                    ))}
-                                </select>
-                            </form>
+                            <UserRoleSelect
+                                userId={user.id}
+                                currentRole={user.role}
+                                roles={Object.values(Role)}
+                            />
                         </div>
                     </div>
 
