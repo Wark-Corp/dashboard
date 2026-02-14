@@ -61,3 +61,41 @@ export async function removeServerAssignment(assignmentId: string) {
         throw error;
     }
 }
+export async function saveUserAdminChanges(userId: string, newRole: Role, serverIds: string[]) {
+    const session = await auth();
+    if (session?.user.role !== 'EXECUTIVE') {
+        throw new Error("Unauthorized");
+    }
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            // 1. Update Role
+            await tx.user.update({
+                where: { id: userId },
+                data: { role: newRole }
+            });
+
+            // 2. Sync Server Assignments
+            // Delete all existing and recreate (simplest for this scale)
+            await tx.serverAssignment.deleteMany({
+                where: { userId }
+            });
+
+            if (serverIds.length > 0) {
+                await tx.serverAssignment.createMany({
+                    data: serverIds.map(serverId => ({
+                        userId,
+                        serverId,
+                        serverName: `Server ${serverId}` // Placeholder, usually fetched from API but here we keep it simple
+                    }))
+                });
+            }
+        });
+
+        revalidatePath('/', 'layout');
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving user admin changes:", error);
+        return { success: false, error: "Failed to save changes" };
+    }
+}
