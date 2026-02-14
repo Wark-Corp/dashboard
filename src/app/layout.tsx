@@ -17,7 +17,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
+  let session: any = null;
+  try {
+    session = await auth();
+  } catch (e) {
+    console.error("RootLayout auth error:", e);
+  }
 
   return (
     <html lang="es">
