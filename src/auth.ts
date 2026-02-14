@@ -15,6 +15,8 @@ async function getUser(email: string) {
     }
 }
 
+import { authConfig } from "./auth.config"
+
 // Redundant imports removed
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
