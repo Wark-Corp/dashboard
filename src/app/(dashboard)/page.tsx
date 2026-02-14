@@ -2,12 +2,18 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import ServerCard from "@/components/ServerCard";
 
-async function getServers() {
+import prisma from "@/lib/prisma";
+
+// ... existing imports
+
+async function getServers(user: any) {
+  // 1. Fetch all servers from API (Executive needs all, others need to filter)
   const apiKey = process.env.PYRO_API_KEY;
   const panelUrl = process.env.PYRO_PANEL_URL;
 
   if (!apiKey || !panelUrl) return [];
 
+  let allServers = [];
   try {
     const response = await fetch(`${panelUrl}/api/application/servers`, {
       headers: {
@@ -15,27 +21,41 @@ async function getServers() {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      next: { revalidate: 30 } // Cache for 30 seconds
+      next: { revalidate: 30 }
     });
-
-    if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText);
-      return [];
-    }
-
     const data = await response.json();
-    return data.data || [];
+    allServers = data.data || [];
   } catch (error) {
     console.error('Fetch error:', error);
     return [];
   }
+
+  // 2. Filter based on Role
+  if (user.role === 'EXECUTIVE') {
+    return allServers;
+  }
+
+  if (user.role === 'END_USER') {
+    return [];
+  }
+
+  // 3. For SysAdmin/Support, get assignments from DB
+  const assignments = await prisma.serverAssignment.findMany({
+    where: { userId: user.id },
+    select: { serverId: true }
+  });
+
+  const assignedIds = assignments.map(a => a.serverId);
+
+  // Filter API results
+  return allServers.filter((server: any) => assignedIds.includes(server.attributes.id.toString()));
 }
 
 export default async function Home() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const servers = await getServers();
+  const servers = await getServers(session.user);
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -92,7 +112,7 @@ export default async function Home() {
           gap: '2rem'
         }}>
           {servers.map((server: any) => (
-            <ServerCard key={server.attributes.id} server={server.attributes} />
+            <ServerCard key={server.attributes.id} server={server.attributes} role={session.user.role as string} />
           ))}
         </div>
       )}

@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  EXECUTIVE
+  SYSADMIN
+  SUPPORT
+  END_USER
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String?
@@ -21,6 +28,9 @@ model User {
   twoFactorSecret String?
   twoFactorEnabled Boolean @default(false)
   
+  role            Role      @default(END_USER)
+  serverAssignments ServerAssignment[]
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -58,4 +68,15 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model ServerAssignment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId   String
+  serverName String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, serverId])
 }
