@@ -32,6 +32,8 @@ async function getServers(user: any) {
     return [];
   }
 
+  console.log(`[getServers] Processing role: ${user.role} for user: ${user.email}`);
+
   // 2. Filter based on Role
   if (user.role === 'EXECUTIVE') {
     return allServers;
@@ -48,9 +50,21 @@ async function getServers(user: any) {
   });
 
   const assignedIds = assignments.map(a => a.serverId);
+  console.log(`[getServers] Found ${assignedIds.length} assignments in DB:`, assignedIds);
 
   // Filter API results
-  return allServers.filter((server: any) => assignedIds.includes(server.attributes.id.toString()));
+  const filtered = allServers.filter((server: any) => {
+    const apiId = server.attributes.id.toString();
+    const apiUuid = server.attributes.identifier;
+    const isMatched = assignedIds.includes(apiId) || assignedIds.includes(apiUuid);
+
+    // Log matches only in dev or if needed, but for now let's see why it fails
+    if (isMatched) console.log(`[getServers] Matched server: ${server.attributes.name} (${apiId}/${apiUuid})`);
+    return isMatched;
+  });
+
+  console.log(`[getServers] Returning ${filtered.length} servers after filtering.`);
+  return filtered;
 }
 
 export default async function Home() {

@@ -68,6 +68,8 @@ export async function saveUserAdminChanges(userId: string, newRole: Role, server
     }
 
     try {
+        console.log(`Starting bulk update for user ${userId}. Role: ${newRole}, Servers: ${serverIds.length}`);
+
         await prisma.$transaction(async (tx) => {
             // 1. Update Role
             await tx.user.update({
@@ -76,26 +78,30 @@ export async function saveUserAdminChanges(userId: string, newRole: Role, server
             });
 
             // 2. Sync Server Assignments
-            // Delete all existing and recreate (simplest for this scale)
+            // Ensure unique server IDs to avoid constraint violations
+            const uniqueServerIds = [...new Set(serverIds)];
+
             await tx.serverAssignment.deleteMany({
                 where: { userId }
             });
 
-            if (serverIds.length > 0) {
+            if (uniqueServerIds.length > 0) {
                 await tx.serverAssignment.createMany({
-                    data: serverIds.map(serverId => ({
+                    data: uniqueServerIds.map(serverId => ({
                         userId,
                         serverId,
-                        serverName: `Server ${serverId}` // Placeholder, usually fetched from API but here we keep it simple
+                        serverName: `Server ${serverId}`
                     }))
                 });
             }
         });
 
+        console.log(`Successfully updated user ${userId}`);
+        revalidatePath('/admin');
         revalidatePath('/', 'layout');
         return { success: true };
-    } catch (error) {
-        console.error("Error saving user admin changes:", error);
-        return { success: false, error: "Failed to save changes" };
+    } catch (error: any) {
+        console.error("CRITICAL ERROR in saveUserAdminChanges:", error);
+        return { success: false, error: error.message || "Failed to save changes" };
     }
 }

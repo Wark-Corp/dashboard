@@ -45,7 +45,7 @@ export default function UserAdminCard({ user, availableRoles }: UserAdminCardPro
                 router.refresh(); // Force refresh to sync Server Components
                 setTimeout(() => setMessage(null), 3000);
             } else {
-                setMessage({ type: 'error', text: 'Error al guardar cambios' });
+                setMessage({ type: 'error', text: result.error || 'Error al guardar cambios' });
             }
         });
     };
