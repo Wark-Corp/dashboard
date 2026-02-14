@@ -1,10 +1,17 @@
 import prisma from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import UserAdminCard from "@/components/admin/UserAdminCard";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
+    const session = await auth();
+    if (session?.user?.role !== 'EXECUTIVE') {
+        redirect("/");
+    }
+
     const users = await prisma.user.findMany({
         include: { serverAssignments: true },
         orderBy: { createdAt: 'desc' }

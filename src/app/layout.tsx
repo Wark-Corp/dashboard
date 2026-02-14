@@ -54,7 +54,7 @@ export default async function RootLayout({
           <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
             {session ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                {(session.user?.role === 'EXECUTIVE' || session.user?.role === 'SUPPORT') && (
+                {session.user?.role === 'EXECUTIVE' && (
                   <Link href="/admin" className="admin-link" style={{
                     fontSize: '0.875rem',
                     color: '#fff',

@@ -35,35 +35,28 @@ async function getServers(user: any) {
   console.log(`[getServers] Processing role: ${user.role} for user: ${user.email}`);
 
   // 2. Filter based on Role
-  if (user.role === 'EXECUTIVE') {
+  // EXECUTIVE, SYSADMIN, and SUPPORT see ALL servers
+  if (user.role === 'EXECUTIVE' || user.role === 'SYSADMIN' || user.role === 'SUPPORT') {
     return allServers;
   }
 
-  if (user.role === 'END_USER') {
-    return [];
-  }
-
-  // 3. For SysAdmin/Support, get assignments from DB
+  // 3. For END_USER, get specifically assigned servers from DB
   const assignments = await prisma.serverAssignment.findMany({
     where: { userId: user.id },
     select: { serverId: true }
   });
 
   const assignedIds = assignments.map(a => a.serverId);
-  console.log(`[getServers] Found ${assignedIds.length} assignments in DB:`, assignedIds);
+  console.log(`[getServers] Found ${assignedIds.length} assignments in DB for END_USER:`, assignedIds);
 
   // Filter API results
   const filtered = allServers.filter((server: any) => {
     const apiId = server.attributes.id.toString();
     const apiUuid = server.attributes.identifier;
-    const isMatched = assignedIds.includes(apiId) || assignedIds.includes(apiUuid);
-
-    // Log matches only in dev or if needed, but for now let's see why it fails
-    if (isMatched) console.log(`[getServers] Matched server: ${server.attributes.name} (${apiId}/${apiUuid})`);
-    return isMatched;
+    return assignedIds.includes(apiId) || assignedIds.includes(apiUuid);
   });
 
-  console.log(`[getServers] Returning ${filtered.length} servers after filtering.`);
+  console.log(`[getServers] Returning ${filtered.length} servers for END_USER.`);
   return filtered;
 }
 
