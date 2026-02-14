@@ -54,10 +54,10 @@ async function getServers(user: any) {
 }
 
 export default async function Home() {
-  try {
-    const session = await auth();
-    if (!session) redirect("/login");
+  const session = await auth();
+  if (!session) redirect("/login");
 
+  try {
     const servers = await getServers(session.user);
 
     return (
@@ -122,12 +122,12 @@ export default async function Home() {
       </div>
     );
   } catch (error: any) {
-    if (error?.message === 'NEXT_REDIRECT') throw error;
-    console.error("Dashboard Error:", error);
+    console.error("Dashboard Server Error:", error);
     return (
-      <div style={{ padding: '2rem', color: 'red' }}>
-        <h1>Error Loading Dashboard</h1>
-        <pre>{error.message}</pre>
+      <div style={{ padding: '2rem', color: 'red', textAlign: 'center' }}>
+        <h1>Error Loading Dashboard Data</h1>
+        <p>Hubo un problema cargando los servidores. Por favor, intenta de nuevo más tarde.</p>
+        {process.env.NODE_ENV === 'development' && <pre>{error.message}</pre>}
       </div>
     );
   }
