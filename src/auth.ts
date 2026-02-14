@@ -18,24 +18,7 @@ async function getUser(email: string) {
 import { authConfig } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) {
-                token.role = (user as any).role;
-                token.id = user.id;
-            }
-            return token;
-        },
-        async session({ session, token }) {
-            if (session.user) {
-                session.user.role = token.role as any;
-                session.user.id = token.id as string;
-            }
-            return session;
-        },
-    },
-    adapter: PrismaAdapter(prisma),
-    session: { strategy: 'jwt' },
+    ...authConfig,
     providers: [
         Credentials({
             async authorize(credentials) {
@@ -57,4 +40,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
         }),
     ],
+    adapter: PrismaAdapter(prisma),
+    session: { strategy: 'jwt' },
+    callbacks: {
+        ...authConfig.callbacks,
+        async jwt({ token, user }) {
+            console.log("JWT Callback:", { token, user: user ? { id: user.id } : null });
+            if (user) {
+                token.role = (user as any).role;
+                token.id = user.id;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            console.log("Session Callback:", { session, token });
+            if (session.user) {
+                session.user.role = token.role as any;
+                session.user.id = token.id as string;
+            }
+            return session;
+        },
+    },
 });
