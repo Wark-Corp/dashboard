@@ -14,12 +14,15 @@ interface ServerAttributes {
 
 interface ServerCardProps {
     server: ServerAttributes;
+    role?: string;
 }
 
-export default function ServerCard({ server }: ServerCardProps) {
+export default function ServerCard({ server, role }: ServerCardProps) {
     const [loading, setLoading] = useState(false);
-    const [realStatus, setRealStatus] = useState<string>('checking'); // running, offline, starting, stopping
+    const [realStatus, setRealStatus] = useState<string>('checking');
     const [message, setMessage] = useState('');
+
+    const canControl = role === 'EXECUTIVE' || role === 'SYSADMIN';
 
     // Poll for status
     useEffect(() => {
@@ -44,6 +47,7 @@ export default function ServerCard({ server }: ServerCardProps) {
     }, [server.identifier]);
 
     const handlePower = async (signal: 'start' | 'restart' | 'stop' | 'kill') => {
+        if (!canControl) return;
         setLoading(true);
         setMessage('');
         try {
@@ -122,12 +126,12 @@ export default function ServerCard({ server }: ServerCardProps) {
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 1fr',
                 gap: '0.75rem',
-                opacity: server.suspended ? 0.5 : 1,
-                pointerEvents: server.suspended ? 'none' : 'auto'
+                opacity: server.suspended || !canControl ? 0.5 : 1,
+                pointerEvents: server.suspended || !canControl ? 'none' : 'auto'
             }}>
                 <button
                     onClick={() => handlePower('start')}
-                    disabled={loading || realStatus === 'running'}
+                    disabled={loading || realStatus === 'running' || !canControl}
                     style={{
                         padding: '0.6rem',
                         border: '1px solid rgba(34, 197, 94, 0.2)',
