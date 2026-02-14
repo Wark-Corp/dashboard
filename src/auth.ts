@@ -15,7 +15,8 @@ async function getUser(email: string) {
     }
 }
 
-import { authConfig } from "./auth.config"
+// import { PrismaAdapter } from "@auth/prisma-adapter"
+// import prisma from "@/lib/prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
@@ -40,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
         }),
     ],
-    adapter: PrismaAdapter(prisma),
+    // adapter: PrismaAdapter(prisma), // Temporarily remove adapter to debug crash
     session: { strategy: 'jwt' },
     callbacks: {
         ...authConfig.callbacks,
