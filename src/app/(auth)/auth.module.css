@@ -1,0 +1,42 @@
+.auth-container {
+    background: cubic-gradient(135deg, #0a0a0a, #000000);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-button {
+    width: 100%;
+    padding: 0.75rem;
+    background: #fff;
+    color: #000;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.auth-button:hover {
+    background: #e5e5e5;
+    transform: translateY(-1px);
+}

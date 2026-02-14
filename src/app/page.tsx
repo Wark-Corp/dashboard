@@ -1,103 +1,101 @@
-'use client';
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import ServerCard from "@/components/ServerCard";
 
-import { useEffect, useState } from 'react';
-import ServerCard from '@/components/ServerCard';
+async function getServers() {
+  const apiKey = process.env.PYRO_API_KEY;
+  const panelUrl = process.env.PYRO_PANEL_URL;
 
-interface Server {
-  object: string;
-  attributes: {
-    id: number;
-    uuid: string;
-    identifier: string;
-    name: string;
-    description: string;
-    status: string | null;
-    suspended: boolean;
-  };
-}
+  if (!apiKey || !panelUrl) return [];
 
-export default function Home() {
-  const [servers, setServers] = useState<Server[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  try {
+    const response = await fetch(`${panelUrl}/api/application/servers`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      next: { revalidate: 30 } // Cache for 30 seconds
+    });
 
-  useEffect(() => {
-    async function fetchServers() {
-      try {
-        const res = await fetch('/api/servers');
-        if (!res.ok) {
-          throw new Error(`Failed to fetch servers: ${res.statusText}`);
-        }
-        const data = await res.json();
-        if (data.data) {
-          setServers(data.data);
-        } else {
-          console.error('Unexpected API response format:', data);
-          setError('Formato de respuesta API inesperado');
-        }
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    if (!response.ok) {
+      console.error('API Error:', response.status, response.statusText);
+      return [];
     }
 
-    fetchServers();
-  }, []);
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const session = await auth();
+  if (!session) redirect("/login");
+
+  const servers = await getServers();
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{
+        marginBottom: '3rem',
+        paddingBottom: '2rem',
+        borderBottom: '1px solid var(--card-border)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'end'
+      }}>
         <div>
           <h2 style={{
             fontSize: '2.5rem',
             fontWeight: 800,
-            letterSpacing: '-0.05em',
-            background: 'linear-gradient(to right, #fff, #666)',
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(to right, #fff, #888)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             marginBottom: '0.5rem'
           }}>
             Dashboard
           </h2>
-          <p style={{ color: 'var(--text-muted)' }}>Gestiona tus servidores Pyrodactyl</p>
+          <p style={{ color: '#888' }}>
+            Bienvenido, <span style={{ color: '#fff' }}>{session.user?.name || 'Administrador'}</span>.
+          </p>
         </div>
-      </header>
-
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-          Cargando servidores...
-        </div>
-      )}
-
-      {error && (
         <div style={{
-          padding: '1rem',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid var(--danger-color)',
-          borderRadius: '8px',
-          color: 'var(--danger-color)'
+          padding: '0.5rem 1rem',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '99px',
+          border: '1px solid rgba(255,255,255,0.1)',
+          fontSize: '0.875rem',
+          color: '#aaa'
         }}>
-          Error: {error}
+          {servers.length} Servidores Activos
         </div>
-      )}
-
-      {!loading && !error && servers.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-          No se encontraron servidores.
-        </div>
-      )}
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-        gap: '1.5rem'
-      }}>
-        {servers.map((server) => (
-          <ServerCard key={server.attributes.id} server={server.attributes} />
-        ))}
       </div>
+
+      {servers.length === 0 ? (
+        <div style={{
+          padding: '4rem',
+          textAlign: 'center',
+          border: '1px dashed var(--card-border)',
+          borderRadius: '16px',
+          color: '#666'
+        }}>
+          No se encontraron servidores o hubo un error de conexión.
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gap: '2rem'
+        }}>
+          {servers.map((server: any) => (
+            <ServerCard key={server.attributes.id} server={server.attributes} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

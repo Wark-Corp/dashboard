@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ServerAttributes {
     id: number;
@@ -18,7 +18,30 @@ interface ServerCardProps {
 
 export default function ServerCard({ server }: ServerCardProps) {
     const [loading, setLoading] = useState(false);
+    const [realStatus, setRealStatus] = useState<string>('checking'); // running, offline, starting, stopping
     const [message, setMessage] = useState('');
+
+    // Poll for status
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        const checkStatus = async () => {
+            try {
+                const res = await fetch(`/api/server/${server.identifier}/resources`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setRealStatus(data.current_state || 'offline');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        checkStatus(); // Initial check
+        interval = setInterval(checkStatus, 5000); // Poll every 5s
+
+        return () => clearInterval(interval);
+    }, [server.identifier]);
 
     const handlePower = async (signal: 'start' | 'restart' | 'stop' | 'kill') => {
         setLoading(true);
@@ -33,69 +56,91 @@ export default function ServerCard({ server }: ServerCardProps) {
             });
 
             if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Error executing action');
+                throw new Error('Action failed');
             }
 
-            setMessage(`Action ${signal} sent successfully`);
+            setMessage(`Signal sent: ${signal}`);
+            // Optimistic update (guess the next state)
+            if (signal === 'start') setRealStatus('starting');
+            if (signal === 'stop' || signal === 'kill') setRealStatus('stopping');
+
         } catch (err: any) {
-            setMessage(`Error: ${err.message}`);
+            setMessage(`Error: action failed`);
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 3000);
         }
     };
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'running': return 'var(--status-running)';
+            case 'offline': return 'var(--status-offline)';
+            case 'starting': return 'var(--status-starting)';
+            case 'stopping': return 'var(--status-starting)';
+            default: return '#666';
+        }
+    };
+
     return (
-        <div style={{
-            background: 'var(--card-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '12px',
+        <div className="glass" style={{
+            borderRadius: '16px',
             padding: '1.5rem',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            transition: 'all 0.3s ease',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
         }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.4)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = 'var(--card-hover-border)';
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'var(--card-border)';
             }}
         >
-            <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--accent-color)' }}>{server.name}</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>ID: {server.identifier}</p>
-                <div style={{
-                    display: 'inline-block',
-                    marginTop: '0.5rem',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '999px',
-                    fontSize: '0.75rem',
-                    background: server.suspended ? 'var(--danger-color)' : 'var(--success-color)',
-                    color: 'black',
-                    fontWeight: 600
-                }}>
-                    {server.suspended ? 'Suspended' : (server.status || 'Active')}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1.5rem' }}>
+                <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', marginBottom: '0.25rem' }}>{server.name}</h3>
+                    <p style={{ color: '#666', fontSize: '0.8rem', fontFamily: 'monospace' }}>{server.identifier}</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: getStatusColor(realStatus),
+                        boxShadow: `0 0 10px ${getStatusColor(realStatus)}`
+                    }} className={realStatus === 'starting' || realStatus === 'shopping' ? 'animate-pulse' : ''} />
+                    <span style={{ fontSize: '0.75rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {server.suspended ? 'SUSPENDED' : realStatus}
+                    </span>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: '0.75rem',
+                opacity: server.suspended ? 0.5 : 1,
+                pointerEvents: server.suspended ? 'none' : 'auto'
+            }}>
                 <button
                     onClick={() => handlePower('start')}
-                    disabled={loading}
+                    disabled={loading || realStatus === 'running'}
                     style={{
-                        padding: '0.5rem',
-                        border: 'none',
-                        borderRadius: '6px',
-                        background: 'var(--success-color)',
-                        color: 'black',
+                        padding: '0.6rem',
+                        border: '1px solid rgba(34, 197, 94, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e',
                         fontWeight: 600,
+                        fontSize: '0.875rem',
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1
+                        transition: 'all 0.2s',
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(34, 197, 94, 0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(34, 197, 94, 0.1)'}
                 >
                     Start
                 </button>
@@ -103,31 +148,37 @@ export default function ServerCard({ server }: ServerCardProps) {
                     onClick={() => handlePower('restart')}
                     disabled={loading}
                     style={{
-                        padding: '0.5rem',
-                        border: 'none',
-                        borderRadius: '6px',
-                        background: 'var(--warning-color)',
-                        color: 'black',
+                        padding: '0.6rem',
+                        border: '1px solid rgba(234, 179, 8, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(234, 179, 8, 0.1)',
+                        color: '#eab308',
                         fontWeight: 600,
+                        fontSize: '0.875rem',
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1
+                        transition: 'all 0.2s',
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(234, 179, 8, 0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(234, 179, 8, 0.1)'}
                 >
-                    Restart
+                    Reboot
                 </button>
                 <button
                     onClick={() => handlePower('kill')}
-                    disabled={loading}
+                    disabled={loading || realStatus === 'offline'}
                     style={{
-                        padding: '0.5rem',
-                        border: 'none',
-                        borderRadius: '6px',
-                        background: 'var(--danger-color)',
-                        color: 'black',
+                        padding: '0.6rem',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
                         fontWeight: 600,
+                        fontSize: '0.875rem',
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1
+                        transition: 'all 0.2s',
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                 >
                     Stop
                 </button>
@@ -136,8 +187,9 @@ export default function ServerCard({ server }: ServerCardProps) {
             {message && (
                 <div style={{
                     marginTop: '1rem',
-                    fontSize: '0.875rem',
-                    color: message.startsWith('Error') ? 'var(--danger-color)' : 'var(--success-color)'
+                    fontSize: '0.75rem',
+                    textAlign: 'center',
+                    color: message.startsWith('Error') ? '#ef4444' : '#22c55e'
                 }}>
                     {message}
                 </div>
