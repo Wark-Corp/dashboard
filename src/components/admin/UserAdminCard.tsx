@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { saveUserAdminChanges } from "@/lib/admin-actions";
 import { Role } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 interface UserAdminCardProps {
     user: {
@@ -16,6 +17,7 @@ interface UserAdminCardProps {
 }
 
 export default function UserAdminCard({ user, availableRoles }: UserAdminCardProps) {
+    const router = useRouter();
     const [role, setRole] = useState<Role>(user.role);
     const [serverIds, setServerIds] = useState<string[]>(
         user.serverAssignments.map(a => a.serverId)
@@ -23,6 +25,12 @@ export default function UserAdminCard({ user, availableRoles }: UserAdminCardPro
     const [newServerId, setNewServerId] = useState("");
     const [isPending, startTransition] = useTransition();
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Reset local state when props change (after revalidation/refresh)
+    useEffect(() => {
+        setRole(user.role);
+        setServerIds(user.serverAssignments.map(a => a.serverId));
+    }, [user.role, user.serverAssignments]);
 
     const hasChanges =
         role !== user.role ||
@@ -34,6 +42,8 @@ export default function UserAdminCard({ user, availableRoles }: UserAdminCardPro
             const result = await saveUserAdminChanges(user.id, role, serverIds);
             if (result.success) {
                 setMessage({ type: 'success', text: 'Cambios guardados correctamente' });
+                router.refresh(); // Force refresh to sync Server Components
+                setTimeout(() => setMessage(null), 3000);
             } else {
                 setMessage({ type: 'error', text: 'Error al guardar cambios' });
             }
