@@ -53,10 +53,25 @@ export default async function RootLayout({
 
           <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
             {session ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                {(session.user?.role === 'EXECUTIVE' || session.user?.role === 'SUPPORT') && (
+                  <Link href="/admin" style={{
+                    fontSize: '0.875rem',
+                    color: '#fff',
+                    fontWeight: 500,
+                    opacity: 0.8,
+                  }}
+                    // @ts-ignore
+                    onMouseEnter={(e) => e.target.style.opacity = '1'}
+                    // @ts-ignore
+                    onMouseLeave={(e) => e.target.style.opacity = '0.8'}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
                 <Link href="/account" style={{ textAlign: 'right', fontSize: '0.875rem', cursor: 'pointer' }}>
                   <div style={{ color: '#fff' }}>{session.user?.name || session.user?.email}</div>
-                  <div style={{ color: '#666', fontSize: '0.75rem' }}>Administrator</div>
+                  <div style={{ color: '#666', fontSize: '0.75rem' }}>{session.user?.role || 'User'}</div>
                 </Link>
                 <form action={async () => {
                   "use server"
