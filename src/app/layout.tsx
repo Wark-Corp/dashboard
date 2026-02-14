@@ -17,14 +17,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let session: any = null;
-  try {
-    // session = await auth();
-    console.log("RootLayout: Auth disabled for debugging");
-  } catch (e) {
-    console.error("Auth failed in layout:", e);
-    session = null;
-  }
+  const session = await auth();
 
   return (
     <html lang="es">
