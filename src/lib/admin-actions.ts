@@ -11,12 +11,16 @@ export async function updateUserRole(userId: string, newRole: Role) {
         throw new Error("Unauthorized");
     }
 
-    await prisma.user.update({
-        where: { id: userId },
-        data: { role: newRole }
-    });
-
-    revalidatePath('/admin');
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { role: newRole }
+        });
+        revalidatePath('/', 'layout');
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        throw error;
+    }
 }
 
 export async function assignServer(userId: string, serverId: string, serverName: string) {
@@ -33,9 +37,10 @@ export async function assignServer(userId: string, serverId: string, serverName:
                 serverName
             }
         });
-        revalidatePath('/admin');
+        revalidatePath('/', 'layout');
         return { success: true };
     } catch (e) {
+        console.error("Error assigning server:", e);
         return { success: false, error: 'Server already assigned or invalid' };
     }
 }
@@ -46,8 +51,13 @@ export async function removeServerAssignment(assignmentId: string) {
         throw new Error("Unauthorized");
     }
 
-    await prisma.serverAssignment.delete({
-        where: { id: assignmentId }
-    });
-    revalidatePath('/admin');
+    try {
+        await prisma.serverAssignment.delete({
+            where: { id: assignmentId }
+        });
+        revalidatePath('/', 'layout');
+    } catch (error) {
+        console.error("Error removing server assignment:", error);
+        throw error;
+    }
 }
