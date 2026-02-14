@@ -55,9 +55,20 @@ async function getServers(user: any) {
 
 export default async function Home() {
   try {
-    // const session = await auth();
-    // if (!session) redirect("/login");
-    const session = { user: { name: 'Debug User', role: 'EXECUTIVE', id: 'debug-id' } };
+    let session: any = null;
+    let authError: any = null;
+
+    try {
+      session = await auth();
+    } catch (e) {
+      console.error("Dashboard Page Auth Error:", e);
+      authError = e;
+    }
+
+    // Fallback if auth fails or returns null
+    if (!session) {
+      session = { user: { name: 'Fallback User (Auth Failed)', role: 'EXECUTIVE', id: 'debug-id' } };
+    }
 
     const servers = await getServers(session.user);
 

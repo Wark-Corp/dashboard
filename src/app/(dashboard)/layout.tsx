@@ -6,20 +6,25 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
+    let session: any = null;
     try {
-        // const session = await auth();
-        // if (!session) {
-        //     // redirect("/login");
-        // }
+        session = await auth();
     } catch (error) {
-        // If it's a redirect, rethrow it so Next.js handles it
-        if ((error as Error).message === 'NEXT_REDIRECT') {
-            throw error;
-        }
-        console.error("DashboardLayout Auth Error:", error);
-        // On critical auth error, force redirect to login
-        redirect("/login");
+        console.error("DashboardLayout Auth Error (Soft Fail):", error);
+        // Do not redirect on error, just let session be null
     }
 
-    return <>{children}</>;
+    if (!session) {
+        // redirect("/login"); // Keep redirect disabled for now to allow debug
+    }
+    // If it's a redirect, rethrow it so Next.js handles it
+    if ((error as Error).message === 'NEXT_REDIRECT') {
+        throw error;
+    }
+    console.error("DashboardLayout Auth Error:", error);
+    // On critical auth error, force redirect to login
+    redirect("/login");
+}
+
+return <>{children}</>;
 }
