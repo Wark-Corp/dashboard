@@ -17,12 +17,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let session;
+  let session: any = null;
   try {
-    session = await auth();
+    // session = await auth();
+    console.log("RootLayout: Auth disabled for debugging");
   } catch (e) {
     console.error("Auth failed in layout:", e);
-    // Continue without session to allow debug page to render
     session = null;
   }
 
