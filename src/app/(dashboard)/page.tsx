@@ -4,6 +4,8 @@ import ServerCard from "@/components/ServerCard";
 
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // ... existing imports
 
 async function getServers(user: any) {
