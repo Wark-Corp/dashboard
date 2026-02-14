@@ -29,7 +29,7 @@ export default function LoginPage() {
                     Bienvenido de nuevo
                 </h1>
                 <p style={{ color: '#a1a1a1', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    Gestiona tus servidores Pyrodactyl
+                    Gestiona tus servidores de Wark
                 </p>
             </div>
 
