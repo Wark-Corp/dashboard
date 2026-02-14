@@ -55,17 +55,13 @@ export default async function RootLayout({
             {session ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
                 {(session.user?.role === 'EXECUTIVE' || session.user?.role === 'SUPPORT') && (
-                  <Link href="/admin" style={{
+                  <Link href="/admin" className="admin-link" style={{
                     fontSize: '0.875rem',
                     color: '#fff',
                     fontWeight: 500,
                     opacity: 0.8,
-                  }}
-                    // @ts-ignore
-                    onMouseEnter={(e) => e.target.style.opacity = '1'}
-                    // @ts-ignore
-                    onMouseLeave={(e) => e.target.style.opacity = '0.8'}
-                  >
+                    transition: 'opacity 0.2s'
+                  }}>
                     Admin Panel
                   </Link>
                 )}
