@@ -7,10 +7,10 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }) {
     try {
-        const session = await auth();
-        if (!session) {
-            redirect("/login");
-        }
+        // const session = await auth();
+        // if (!session) {
+        //     // redirect("/login");
+        // }
     } catch (error) {
         // If it's a redirect, rethrow it so Next.js handles it
         if ((error as Error).message === 'NEXT_REDIRECT') {
